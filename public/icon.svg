@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#020617"/>
+      <stop offset="50%" stop-color="#064e3b"/>
+      <stop offset="100%" stop-color="#047857"/>
+    </linearGradient>
+    <linearGradient id="waveGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#34d399"/>
+      <stop offset="100%" stop-color="#06b6d4"/>
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="16" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- Background rounded squircle -->
+  <rect width="512" height="512" rx="128" fill="url(#bgGrad)"/>
+  <rect width="504" height="504" x="4" y="4" rx="124" fill="none" stroke="#10b981" stroke-width="6" stroke-opacity="0.3"/>
+
+  <!-- Glowing Soundwaves -->
+  <g fill="url(#waveGrad)" filter="url(#glow)">
+    <!-- Bar 1 -->
+    <rect x="110" y="206" width="36" height="100" rx="18"/>
+    <!-- Bar 2 -->
+    <rect x="176" y="146" width="36" height="220" rx="18"/>
+    <!-- Bar 3 (Center) -->
+    <rect x="238" y="96" width="36" height="320" rx="18"/>
+    <!-- Bar 4 -->
+    <rect x="300" y="166" width="36" height="180" rx="18"/>
+    <!-- Bar 5 -->
+    <rect x="366" y="216" width="36" height="80" rx="18"/>
+  </g>
+
+  <!-- Sparkle element top-right -->
+  <path d="M400 100 Q400 130 430 130 Q400 130 400 160 Q400 130 370 130 Q400 130 400 100 Z" fill="#34d399" opacity="0.9"/>
+</svg>

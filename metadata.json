@@ -1,0 +1,6 @@
+{
+  "name": "Voxflow - Studio Voix Off IA",
+  "description": "Studio de voix off IA moderne avec Google Text-to-Speech, clonage de voix, modulation de débit et tonalité, et export MP3.",
+  "requestFramePermissions": ["microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
