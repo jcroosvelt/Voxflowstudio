@@ -73,6 +73,8 @@ export default function App() {
   const [clonedVoices, setClonedVoices] = useState<ClonedVoiceProfile[]>([]);
   const [currentClonedProfile, setCurrentClonedProfile] = useState<ClonedVoiceProfile | null>(null);
   const [voiceCategoryFilter, setVoiceCategoryFilter] = useState<string>('Tous');
+  const [voiceSearchQuery, setVoiceSearchQuery] = useState<string>('');
+  const [biblioSearchQuery, setBiblioSearchQuery] = useState<string>('');
 
   // Acoustic Controls State
   const [rate, setRate] = useState<number>(1.0);
@@ -496,6 +498,15 @@ export default function App() {
 
   // Filtered preset voices
   const filteredVoices = PRESET_VOICES.filter((voice) => {
+    if (voiceSearchQuery.trim()) {
+      const q = voiceSearchQuery.toLowerCase();
+      const matchName = voice.name.toLowerCase().includes(q);
+      const matchCat = voice.category.toLowerCase().includes(q);
+      const matchTags = voice.tags.some((t) => t.toLowerCase().includes(q));
+      const matchDesc = voice.description.toLowerCase().includes(q);
+      if (!matchName && !matchCat && !matchTags && !matchDesc) return false;
+    }
+
     if (voiceCategoryFilter === 'Tous') return true;
     if (voiceCategoryFilter === 'Créole & Caraïbes') {
       return voice.tags.some((t) => t.toLowerCase().includes('créole') || t.toLowerCase().includes('haïti') || t.toLowerCase().includes('caraïbes'));
@@ -517,6 +528,17 @@ export default function App() {
     }
     if (voice.category === voiceCategoryFilter) return true;
     return false;
+  });
+
+  // Filtered saved history records
+  const filteredRecords = savedRecords.filter((record) => {
+    if (!biblioSearchQuery.trim()) return true;
+    const q = biblioSearchQuery.toLowerCase();
+    return (
+      record.title.toLowerCase().includes(q) ||
+      record.voiceName.toLowerCase().includes(q) ||
+      record.originalText.toLowerCase().includes(q)
+    );
   });
 
   // Generate waveform bars (42 bars)
@@ -611,9 +633,9 @@ export default function App() {
         {/* Quota card at rail bottom */}
         <div className="quota">
           <b className="num">{charCount.toLocaleString('fr-FR')}</b>
-          caractères dans le script (max 2 min / ~320 mots)
+          caractères dans le script (max 5 min / ~850 mots)
           <div className="bar">
-            <i style={{ width: `${Math.min(100, (charCount / 2500) * 100)}%` }}></i>
+            <i style={{ width: `${Math.min(100, (charCount / 6000) * 100)}%` }}></i>
           </div>
         </div>
       </aside>
@@ -662,596 +684,804 @@ export default function App() {
           </div>
         )}
 
-        {/* ================= VIEW 1: STUDIO ================= */}
-        <section className={`view studio ${activeView === 'studio' ? 'on' : ''}`}>
-          {/* Stage: Script Editor */}
-          <div className="stage">
-            <div className="stage-tools" role="toolbar" aria-label="Insérer dans le texte">
-              <button
-                type="button"
-                className="chip"
-                onClick={() => {
-                  setText((prev) => (prev ? `${prev} [pause 0,5 s] ` : '[pause 0,5 s] '));
-                  setIsTextModifiedSinceGen(true);
-                }}
-              >
-                Pause courte
-              </button>
-              <button
-                type="button"
-                className="chip"
-                onClick={() => {
-                  setText((prev) => (prev ? `${prev} [pause 1 s] ` : '[pause 1 s] '));
-                  setIsTextModifiedSinceGen(true);
-                }}
-              >
-                Pause longue
-              </button>
-              <button
-                type="button"
-                className="chip"
-                onClick={() => {
-                  setText((prev) => (prev ? `${prev} [emphase] ` : '[emphase] '));
-                  setIsTextModifiedSinceGen(true);
-                }}
-              >
-                Emphase
-              </button>
-              <button
-                type="button"
-                className="chip"
-                onClick={() => {
-                  setText((prev) => (prev ? `${prev} <sourire> ` : '<sourire> '));
-                  setIsTextModifiedSinceGen(true);
-                }}
-              >
-                Sourire
-              </button>
-              <button
-                type="button"
-                className="chip"
-                onClick={() => {
-                  setText((prev) => (prev ? `${prev} <respiration> ` : '<respiration> '));
-                  setIsTextModifiedSinceGen(true);
-                }}
-              >
-                Respiration
-              </button>
-              <button
-                type="button"
-                className="chip"
-                disabled={isOptimizingScript || !text}
-                onClick={handleAIOptimize}
-              >
-                {isOptimizingScript ? 'Optimisation...' : 'Polir le texte (IA)'}
-              </button>
-              <button
-                type="button"
-                className="chip ml-auto"
-                onClick={() => {
-                  setText('');
-                  setIsTextModifiedSinceGen(true);
-                }}
-              >
-                Effacer
-              </button>
+        {/* ================= VIEWS CONTAINER ================= */}
+        <div className="view-container">
+          {/* ================= VIEW 1: STUDIO ================= */}
+          <section className={`view ${activeView === 'studio' ? 'on' : ''}`}>
+            <div className="unified-layout">
+              {/* Left Stage: Script Editor */}
+              <div className="stage">
+                <div className="stage-tools" role="toolbar" aria-label="Insérer dans le texte">
+                  <button
+                    type="button"
+                    className="chip"
+                    onClick={() => {
+                      setText((prev) => (prev ? `${prev} [pause 0,5 s] ` : '[pause 0,5 s] '));
+                      setIsTextModifiedSinceGen(true);
+                    }}
+                  >
+                    Pause courte
+                  </button>
+                  <button
+                    type="button"
+                    className="chip"
+                    onClick={() => {
+                      setText((prev) => (prev ? `${prev} [pause 1 s] ` : '[pause 1 s] '));
+                      setIsTextModifiedSinceGen(true);
+                    }}
+                  >
+                    Pause longue
+                  </button>
+                  <button
+                    type="button"
+                    className="chip"
+                    onClick={() => {
+                      setText((prev) => (prev ? `${prev} [emphase] ` : '[emphase] '));
+                      setIsTextModifiedSinceGen(true);
+                    }}
+                  >
+                    Emphase
+                  </button>
+                  <button
+                    type="button"
+                    className="chip"
+                    onClick={() => {
+                      setText((prev) => (prev ? `${prev} <sourire> ` : '<sourire> '));
+                      setIsTextModifiedSinceGen(true);
+                    }}
+                  >
+                    Sourire
+                  </button>
+                  <button
+                    type="button"
+                    className="chip"
+                    onClick={() => {
+                      setText((prev) => (prev ? `${prev} <respiration> ` : '<respiration> '));
+                      setIsTextModifiedSinceGen(true);
+                    }}
+                  >
+                    Respiration
+                  </button>
+                  <button
+                    type="button"
+                    className="chip"
+                    disabled={isOptimizingScript || !text}
+                    onClick={handleAIOptimize}
+                  >
+                    {isOptimizingScript ? 'Optimisation...' : 'Polir le texte (IA)'}
+                  </button>
+                  <button
+                    type="button"
+                    className="chip ml-auto"
+                    onClick={() => {
+                      setText('');
+                      setIsTextModifiedSinceGen(true);
+                    }}
+                  >
+                    Effacer
+                  </button>
+                </div>
+
+                {/* Editable Script Textbox */}
+                <div className="relative flex-1 flex flex-col min-h-0">
+                  <textarea
+                    value={text}
+                    onChange={(e) => {
+                      setText(e.target.value);
+                      setIsTextModifiedSinceGen(true);
+                    }}
+                    placeholder="Écrivez ou collez votre texte ici..."
+                    className="script w-full h-full bg-transparent border-0 resize-none focus:outline-none"
+                  />
+                </div>
+
+                {/* Stage Footer Metrics (Up to 5 min / 6000 chars) */}
+                <div className="stage-foot num">
+                  <span><b>{charCount.toLocaleString('fr-FR')}</b> / 6 000 caractères</span>
+                  <span><b>{wordCount}</b> mots</span>
+                  <span>
+                    Durée estimée <b>{formatTime(estimatedSeconds)}</b> (jusqu'à 5 min max)
+                  </span>
+                </div>
+              </div>
+
+              {/* Right Panel: Voice & Audio Tuning Settings */}
+              <aside className="panel" aria-label="Réglages de la voix">
+                {/* Active Voice Card */}
+                <div className="field">
+                  <div className="lab">Voix active</div>
+                  <button
+                    type="button"
+                    className="voice-card"
+                    onClick={() => setActiveView('voix')}
+                    title="Cliquer pour voir tout le catalogue des voix"
+                  >
+                    <div
+                      className="avatar"
+                      style={{
+                        backgroundColor: activeVoiceGender === 'Féminin' ? '#7C3AED' : '#0284C7',
+                      }}
+                    >
+                      {activeVoiceName.slice(0, 2).toUpperCase()}
+                    </div>
+                    <div className="meta">
+                      <b>{activeVoiceName}</b>
+                      <span>{activeVoiceGender} • {activeVoiceCategory}</span>
+                    </div>
+                    <span className="change">Changer</span>
+                  </button>
+                </div>
+
+                {/* Language Selector */}
+                <div className="field">
+                  <label htmlFor="lang">Langue & Prononciation</label>
+                  <select
+                    id="lang"
+                    value={language}
+                    onChange={(e) => setLanguage(e.target.value as any)}
+                  >
+                    <option value="fr">Français (France & International)</option>
+                    <option value="fr">Créole haïtien (Kreyòl Ayisyen)</option>
+                    <option value="en">Anglais (English - US/UK)</option>
+                    <option value="es">Espagnol (Español)</option>
+                    <option value="de">Allemand (Deutsch)</option>
+                    <option value="it">Italien (Italiano)</option>
+                  </select>
+                </div>
+
+                {/* Ton / Style Chips */}
+                <div className="field">
+                  <div className="lab">Ton & Intention</div>
+                  <div className="seg">
+                    {VOCAL_STYLES.map((vStyle) => {
+                      const isSelected = style === vStyle.prompt;
+                      return (
+                        <button
+                          key={vStyle.id}
+                          type="button"
+                          className="chip"
+                          aria-pressed={isSelected}
+                          onClick={() => {
+                            setStyle(vStyle.prompt);
+                            setIsTextModifiedSinceGen(true);
+                          }}
+                        >
+                          {vStyle.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Débit Slider */}
+                <div className="field">
+                  <label htmlFor="rate">
+                    <span>Débit (vitesse)</span>
+                    <output id="o-rate">{rate.toFixed(2)}x</output>
+                  </label>
+                  <input
+                    type="range"
+                    id="rate"
+                    min="0.6"
+                    max="1.8"
+                    step="0.05"
+                    value={rate}
+                    onChange={(e) => setRate(parseFloat(e.target.value))}
+                    style={{
+                      '--p': `${((rate - 0.6) / 1.2) * 100}%`,
+                    } as any}
+                  />
+                  <div className="scale">
+                    <span>Lent</span>
+                    <span>Naturel (1.0x)</span>
+                    <span>Rapide</span>
+                  </div>
+                </div>
+
+                {/* Tonalité Slider */}
+                <div className="field">
+                  <label htmlFor="pitch">
+                    <span>Tonalité</span>
+                    <output id="o-pitch">{pitch > 0 ? `+${pitch}` : pitch} st</output>
+                  </label>
+                  <input
+                    type="range"
+                    id="pitch"
+                    min="-6"
+                    max="6"
+                    step="0.5"
+                    value={pitch}
+                    onChange={(e) => setPitch(parseFloat(e.target.value))}
+                    style={{
+                      '--p': `${((pitch + 6) / 12) * 100}%`,
+                    } as any}
+                  />
+                  <div className="scale">
+                    <span>Grave</span>
+                    <span>0</span>
+                    <span>Aigu</span>
+                  </div>
+                </div>
+
+                {/* Studio Warmth & Auto-Mix Banner */}
+                <div className="p-3.5 bg-raised rounded-2xl border border-line space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-text">Chaleur Lampe Studio</span>
+                    <input
+                      type="checkbox"
+                      checked={studioWarmth}
+                      onChange={(e) => setStudioWarmth(e.target.checked)}
+                      className="w-4 h-4 accent-amber-500 cursor-pointer"
+                    />
+                  </div>
+                  <p className="text-[12px] text-muted">
+                    Compression broadcast et saturation harmonique pour un timbre chaud et présent.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setIsAutoMixModalOpen(true)}
+                    className="w-full py-2 bg-surface hover:bg-raised text-accent-text border border-line rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition"
+                  >
+                    <Wand2 className="w-3.5 h-3.5 text-amber-500" />
+                    <span>Nettoyer & Mixer un enregistrement</span>
+                  </button>
+                </div>
+              </aside>
+            </div>
+          </section>
+
+          {/* ================= VIEW 2: VOIX (CATALOGUE) ================= */}
+          <section className={`view ${activeView === 'voix' ? 'on' : ''}`} data-view="voix">
+            <div className="unified-layout">
+              {/* Left Stage: Voices Grid */}
+              <div className="stage">
+                {/* Filter Chips Toolbar */}
+                <div className="stage-tools">
+                  {[
+                    'Tous',
+                    'Créole & Caraïbes',
+                    'Français Métropolitain',
+                    'Publicité',
+                    'Journalisme & Reportage',
+                    'Documentaire',
+                    'Livre audio & Romance',
+                    'Cinéma & Gaming',
+                  ].map((cat) => (
+                    <button
+                      key={cat}
+                      type="button"
+                      className="chip"
+                      aria-pressed={voiceCategoryFilter === cat}
+                      onClick={() => setVoiceCategoryFilter(cat)}
+                    >
+                      {cat}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Stage Content */}
+                <div className="stage-content">
+                  {/* Search Bar */}
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      placeholder="Rechercher une voix, accent créole, style (ex: Garry, Nadège, Publicité)..."
+                      value={voiceSearchQuery}
+                      onChange={(e) => setVoiceSearchQuery(e.target.value)}
+                      className="flex-1"
+                    />
+                    {voiceSearchQuery && (
+                      <button
+                        type="button"
+                        onClick={() => setVoiceSearchQuery('')}
+                        className="chip"
+                      >
+                        Effacer
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Voices Grid */}
+                  <div className="voices">
+                    {filteredVoices.map((voice) => {
+                      const isSelected = selectedVoiceId === voice.id;
+                      const isPreviewing = playingPreviewVoiceId === voice.id;
+
+                      return (
+                        <div
+                          key={voice.id}
+                          className={`voice ${isSelected ? 'sel' : ''}`}
+                        >
+                          <div
+                            className="avatar"
+                            style={{
+                              backgroundColor: voice.gender === 'Féminin' ? '#7C3AED' : '#0284C7',
+                            }}
+                          >
+                            {voice.name.slice(0, 2).toUpperCase()}
+                          </div>
+
+                          <div className="meta">
+                            <b>{voice.name}</b>
+                            <span>{voice.gender} • {voice.category}</span>
+                            <p className="text-[12px] text-muted line-clamp-1 mt-0.5">{voice.description}</p>
+                          </div>
+
+                          {/* Audio Preview button */}
+                          <button
+                            type="button"
+                            className="icon-btn"
+                            onClick={(e) => handlePlayVoicePreview(e, voice)}
+                            title="Écouter un extrait vocal"
+                          >
+                            {isPreviewing ? <Pause className="w-4 h-4 text-amber-500" /> : <Play className="w-4 h-4" />}
+                          </button>
+
+                          {/* Use / Select button */}
+                          <button
+                            type="button"
+                            className={`btn use ${isSelected ? 'btn-primary' : 'btn-ghost'}`}
+                            onClick={() => {
+                              handleSelectVoice(voice.id, false);
+                              setActiveView('studio');
+                            }}
+                          >
+                            {isSelected ? 'Active' : 'Choisir'}
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Stage Foot */}
+                <div className="stage-foot num">
+                  <span><b>{filteredVoices.length}</b> voix disponibles</span>
+                  <span><b>{PRESET_VOICES.filter(v => v.tags.some(t => t.includes('Créole'))).length}</b> voix créoles haïtiennes</span>
+                  <span>Prises continues jusqu'à <b>5 minutes</b></span>
+                </div>
+              </div>
+
+              {/* Right Panel: Selected Voice Spotlight & Accents info */}
+              <aside className="panel" aria-label="Comédien sélectionné">
+                <div className="field">
+                  <div className="lab">Voix active dans le Studio</div>
+                  <div className="voice-card">
+                    <div
+                      className="avatar"
+                      style={{
+                        backgroundColor: activeVoiceGender === 'Féminin' ? '#7C3AED' : '#0284C7',
+                      }}
+                    >
+                      {activeVoiceName.slice(0, 2).toUpperCase()}
+                    </div>
+                    <div className="meta">
+                      <b>{activeVoiceName}</b>
+                      <span>{activeVoiceGender} • {activeVoiceCategory}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Spotlight info */}
+                <div className="p-3.5 bg-raised rounded-2xl border border-line space-y-2">
+                  <div className="flex items-center gap-2 text-xs font-bold text-accent-text">
+                    <Sparkles className="w-4 h-4 text-amber-500" />
+                    <span>Accents Créoles Haïtiens Disponibles</span>
+                  </div>
+                  <p className="text-[12px] text-muted leading-relaxed">
+                    <b>Garry :</b> Publicité et vente percutante.<br />
+                    <b>Nadège :</b> Journalisme d'investigation et reportage.<br />
+                    <b>Dany :</b> Récits traditionnels et lodyans.<br />
+                    <b>Fabienne :</b> Entrepreneuriat et tech.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setActiveView('studio')}
+                    className="btn btn-primary w-full h-9 text-xs mt-2"
+                  >
+                    Ouvrir dans le Studio
+                  </button>
+                </div>
+
+                <div className="p-3.5 bg-raised rounded-2xl border border-line space-y-2">
+                  <div className="flex items-center gap-2 text-xs font-bold text-text">
+                    <Mic className="w-4 h-4 text-amber-500" />
+                    <span>Créer votre propre voix</span>
+                  </div>
+                  <p className="text-[12px] text-muted leading-relaxed">
+                    Clonez votre propre voix en 20 secondes ou importez un fichier audio pour générer vos voix off personnalisées.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setActiveView('clonage')}
+                    className="btn btn-ghost w-full h-9 text-xs"
+                  >
+                    Aller au Clonage Vocal
+                  </button>
+                </div>
+              </aside>
+            </div>
+          </section>
+
+          {/* ================= VIEW 3: CLONAGE ================= */}
+          <section className={`view ${activeView === 'clonage' ? 'on' : ''}`} data-view="clonage">
+            <div className="unified-layout">
+              {/* Left Stage: Cloning Steps */}
+              <div className="stage">
+                <div className="stage-tools">
+                  <button type="button" className="chip" aria-pressed="true">
+                    Clonage Vocal IA
+                  </button>
+                  <button
+                    type="button"
+                    className="chip"
+                    onClick={() => setIsAutoMixModalOpen(true)}
+                  >
+                    <Wand2 className="w-3.5 h-3.5 text-amber-500 mr-1 inline" />
+                    Mixeur Vocal Auto
+                  </button>
+                </div>
+
+                <div className="stage-content">
+                  <div className="clone-wrap">
+                    {/* Step 1: Audio Sample */}
+                    <div className="step">
+                      <div className="n">1</div>
+                      <h3>Échantillon vocal</h3>
+                      <div className="body">
+                        <p>Enregistrez votre voix pendant 15 à 30 secondes en lisant un texte naturel, ou importez un fichier audio propre.</p>
+                        <div className="drop">
+                          <div className="row">
+                            <button
+                              type="button"
+                              className="btn btn-rec"
+                              onClick={() => setIsCloneModalOpen(true)}
+                            >
+                              <Mic className="w-4 h-4" />
+                              <span>Enregistrer un échantillon</span>
+                            </button>
+                            <button
+                              type="button"
+                              className="btn btn-ghost"
+                              onClick={() => setIsCloneModalOpen(true)}
+                            >
+                              <Upload className="w-4 h-4" />
+                              <span>Importer un fichier (WAV, MP3)</span>
+                            </button>
+                          </div>
+                          <span className="text-xs text-muted">Durée conseillée : 15 à 60 secondes sans musique de fond</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Step 2: Cloned voices list */}
+                    <div className="step">
+                      <div className="n">2</div>
+                      <h3>Mes voix clonées ({clonedVoices.length})</h3>
+                      <div className="body">
+                        {clonedVoices.length === 0 ? (
+                          <div className="text-center py-6 text-muted">
+                            <Radio className="w-8 h-8 mx-auto mb-2 opacity-40 text-amber-500" />
+                            <p className="text-sm">Aucune voix clonée pour le moment. Cliquez sur le bouton ci-dessus pour enregistrer votre voix.</p>
+                          </div>
+                        ) : (
+                          <div className="grid gap-2">
+                            {clonedVoices.map((clone) => (
+                              <div key={clone.id} className="sample">
+                                <Radio className="w-4 h-4 text-emerald-400 shrink-0" />
+                                <b>{clone.name}</b>
+                                <span className="text-xs text-muted">{clone.vocalRange} • {clone.timbre}</span>
+                                <button
+                                  type="button"
+                                  className="btn btn-primary h-8 px-3 text-xs ml-auto"
+                                  onClick={() => {
+                                    handleSelectVoice(clone.id, true, clone);
+                                    setActiveView('studio');
+                                  }}
+                                >
+                                  Utiliser dans le Studio
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteClone(clone.id)}
+                                  className="text-muted hover:text-rose-400 p-1.5 rounded-lg hover:bg-surface"
+                                  title="Supprimer cette voix clonée"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="stage-foot num">
+                  <span><b>{clonedVoices.length}</b> voix clonées actives</span>
+                  <span>Prises longues jusqu'à <b>5 minutes</b></span>
+                  <span>Précision d'empreinte spectrale : <b>98.4%</b></span>
+                </div>
+              </div>
+
+              {/* Right Panel: Acoustic capture guide & Auto-mix */}
+              <aside className="panel" aria-label="Conseils de captation">
+                <div className="p-3.5 bg-raised rounded-2xl border border-line space-y-2">
+                  <div className="flex items-center gap-2 text-xs font-bold text-accent-text">
+                    <Sparkles className="w-4 h-4 text-amber-500" />
+                    <span>Conseils pour un Clonage Réussi</span>
+                  </div>
+                  <ul className="text-[12px] text-muted space-y-1.5 list-disc pl-4">
+                    <li>Parlez à 15 cm du microphone.</li>
+                    <li>Enregistrez dans une pièce calme sans écho.</li>
+                    <li>Lisez avec votre intonation et énergie habituelles.</li>
+                    <li>Un échantillon de 20 à 30 secondes suffit.</li>
+                  </ul>
+                </div>
+
+                <div className="p-3.5 bg-raised rounded-2xl border border-line space-y-2.5">
+                  <div className="flex items-center gap-2 text-xs font-bold text-text">
+                    <Wand2 className="w-4 h-4 text-amber-500" />
+                    <span>Nettoyeur Vocal Automatique</span>
+                  </div>
+                  <p className="text-[12px] text-muted leading-relaxed">
+                    Supprimez le souffle, le bruit de fond et appliquez un compresseur broadcast en 1 clic avant de cloner.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setIsAutoMixModalOpen(true)}
+                    className="btn btn-ghost w-full h-9 text-xs"
+                  >
+                    Ouvrir le Mixeur Vocal
+                  </button>
+                </div>
+              </aside>
+            </div>
+          </section>
+
+          {/* ================= VIEW 4: BIBLIOTHÈQUE ================= */}
+          <section className={`view ${activeView === 'biblio' ? 'on' : ''}`} data-view="biblio">
+            <div className="unified-layout">
+              {/* Left Stage: Recordings List */}
+              <div className="stage">
+                <div className="stage-tools">
+                  <input
+                    type="text"
+                    placeholder="Filtrer par titre, comédien ou extrait de texte..."
+                    value={biblioSearchQuery}
+                    onChange={(e) => setBiblioSearchQuery(e.target.value)}
+                    className="h-8 text-xs px-3 rounded-full bg-raised border border-line flex-1 max-w-sm"
+                  />
+                  {savedRecords.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        if (window.confirm('Voulez-vous vider tout votre historique ?')) {
+                          await clearAllAudioRecordsFromDB();
+                          setSavedRecords([]);
+                          showToast('Historique vidé.');
+                        }
+                      }}
+                      className="chip text-rose-400 hover:text-rose-300 ml-auto"
+                    >
+                      Vider l'historique
+                    </button>
+                  )}
+                </div>
+
+                <div className="stage-content">
+                  <div className="lib">
+                    {filteredRecords.length === 0 ? (
+                      <div className="p-8 text-center text-muted">
+                        <FileText className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                        <p>{savedRecords.length === 0 ? "Aucun enregistrement dans votre bibliothèque pour l'instant." : 'Aucun résultat ne correspond à votre recherche.'}</p>
+                        {savedRecords.length === 0 && (
+                          <button
+                            type="button"
+                            className="btn btn-primary mt-3 text-xs"
+                            onClick={() => setActiveView('studio')}
+                          >
+                            Générer une première voix off
+                          </button>
+                        )}
+                      </div>
+                    ) : (
+                      filteredRecords.map((record) => (
+                        <div key={record.id} className="lib-row">
+                          <button
+                            type="button"
+                            className="icon-btn"
+                            onClick={() => handlePlaySavedRecord(record)}
+                            title="Écouter dans le lecteur principal"
+                          >
+                            <Play className="w-4 h-4" />
+                          </button>
+
+                          <div className="meta">
+                            <b>{record.title}</b>
+                            <span>
+                              {record.voiceName} • {new Date(record.createdAt).toLocaleDateString('fr-FR', {
+                                day: 'numeric',
+                                month: 'short',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              })}
+                            </span>
+                            <p className="text-xs text-muted line-clamp-1">{record.originalText}</p>
+                          </div>
+
+                          <span className="dur num">{formatTime(record.duration)}</span>
+
+                          <button
+                            type="button"
+                            className="btn btn-ghost h-8 px-3 text-xs"
+                            onClick={() => handleModifySavedRecord(record)}
+                            title="Recharger le texte et les réglages dans le Studio"
+                          >
+                            Modifier
+                          </button>
+
+                          <button
+                            type="button"
+                            className="icon-btn"
+                            onClick={() => downloadAudioFile(record.mp3Blob, `${record.title}.mp3`)}
+                            title="Télécharger MP3 HD (320k)"
+                          >
+                            <Download className="w-4 h-4 text-emerald-500" />
+                          </button>
+
+                          <button
+                            type="button"
+                            className="icon-btn text-muted hover:text-rose-400"
+                            onClick={() => handleDeleteSavedRecord(record.id)}
+                            title="Supprimer"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+
+                <div className="stage-foot num">
+                  <span><b>{savedRecords.length}</b> prises enregistrées</span>
+                  <span>Format : <b>MP3 HD 320 kbps & WAV 24 kHz</b></span>
+                  <span>Capacité par prise : <b>jusqu'à 5 min</b></span>
+                </div>
+              </div>
+
+              {/* Right Panel: Storage & Export Guide */}
+              <aside className="panel" aria-label="Informations d'exportation">
+                <div className="p-3.5 bg-raised rounded-2xl border border-line space-y-2">
+                  <div className="flex items-center gap-2 text-xs font-bold text-accent-text">
+                    <Download className="w-4 h-4 text-emerald-500" />
+                    <span>Qualité Broadcast HD</span>
+                  </div>
+                  <p className="text-[12px] text-muted leading-relaxed">
+                    Toutes vos prises sont exportées en MP3 320 kbps stéréo et WAV 24-48 kHz sans compression agressive, prêtes pour YouTube, TikTok, Spotify et vos spots radios.
+                  </p>
+                </div>
+
+                <div className="p-3.5 bg-raised rounded-2xl border border-line space-y-2">
+                  <div className="flex items-center gap-2 text-xs font-bold text-text">
+                    <AudioWaveform className="w-4 h-4 text-amber-500" />
+                    <span>Support Prises Longues</span>
+                  </div>
+                  <p className="text-[12px] text-muted leading-relaxed">
+                    Générez des voix jusqu'à 5 minutes continues (~850 mots / 6 000 caractères) en conservant une fluidité naturelle.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setActiveView('studio')}
+                    className="btn btn-primary w-full h-9 text-xs mt-2"
+                  >
+                    Nouvelle voix off dans le Studio
+                  </button>
+                </div>
+              </aside>
+            </div>
+          </section>
+        </div>
+
+        {/* Master Dock: Interactive Waveform Player & Primary Actions (Anchored across all views) */}
+        <footer className="dock" role="region" aria-label="Lecteur audio et barre d'actions">
+          <button
+            className="play"
+            onClick={togglePlayPause}
+            disabled={!currentAudioUrl || isGenerating}
+            aria-label={isPlaying ? 'Mettre en pause' : 'Lire la voix off'}
+            title={isPlaying ? 'Pause' : 'Lecture'}
+          >
+            {isPlaying ? <Pause className="ic" /> : <Play className="ic" />}
+          </button>
+
+          <div className="wave-wrap">
+            {/* Waveform Bars */}
+            <div
+              className={`wave ${isGenerating ? 'loading' : ''}`}
+              onClick={(e) => {
+                if (!audioElRef.current || audioDuration <= 0) return;
+                const rect = e.currentTarget.getBoundingClientRect();
+                const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+                audioElRef.current.currentTime = ratio * audioDuration;
+              }}
+            >
+              {waveBarHeights.map((h, idx) => {
+                const progressRatio = audioDuration > 0 ? currentTime / audioDuration : 0;
+                const isPassed = (idx / totalWaveBars) <= progressRatio;
+                return (
+                  <i
+                    key={idx}
+                    className={isPassed && isPlaying ? 'on' : ''}
+                    style={{
+                      '--h': `${h}px`,
+                      '--i': idx,
+                    } as any}
+                  />
+                );
+              })}
             </div>
 
-            {/* Editable Script Textbox with Karaoke-style live reading highlight */}
-            <div className="relative flex-1 flex flex-col">
-              <textarea
-                value={text}
-                onChange={(e) => {
-                  setText(e.target.value);
-                  setIsTextModifiedSinceGen(true);
-                }}
-                placeholder="Écrivez ou collez votre texte ici..."
-                className="script w-full h-full bg-transparent border-0 resize-none focus:outline-none"
-              />
-            </div>
-
-            {/* Stage Footer Metrics */}
-            <div className="stage-foot num">
-              <span><b>{charCount}</b> / 5 000 caractères</span>
-              <span><b>{wordCount}</b> mots</span>
+            <div className="dock-info num">
+              <span className="state">
+                {isGenerating
+                  ? 'Génération haute fidélité (jusqu\'à 5 min)...'
+                  : currentAudioUrl
+                  ? `${activeVoiceName} • Prise prête (${formatTime(audioDuration)})`
+                  : 'Studio prêt'}
+              </span>
               <span>
-                Durée estimée <b>{formatTime(estimatedSeconds)}</b> (jusqu'à 2 min max)
+                <b>{formatTime(currentTime)}</b> / {formatTime(audioDuration || estimatedSeconds)}
               </span>
             </div>
           </div>
 
-          {/* Right Panel: Voice & Audio Tuning Settings */}
-          <aside className="panel" aria-label="Réglages de la voix">
-            {/* Active Voice Card */}
-            <div className="field">
-              <div className="lab">Voix active</div>
-              <button
-                type="button"
-                className="voice-card"
-                onClick={() => setActiveView('voix')}
-                title="Cliquer pour voir tout le catalogue des voix"
-              >
-                <div
-                  className="avatar"
-                  style={{
-                    backgroundColor: activeVoiceGender === 'Féminin' ? '#7C3AED' : '#0284C7',
-                  }}
-                >
-                  {activeVoiceName.slice(0, 2).toUpperCase()}
-                </div>
-                <div className="meta">
-                  <b>{activeVoiceName}</b>
-                  <span>{activeVoiceGender} • {activeVoiceCategory}</span>
-                </div>
-                <span className="change">Changer</span>
-              </button>
-            </div>
-
-            {/* Language Selector */}
-            <div className="field">
-              <label htmlFor="lang">Langue & Prononciation</label>
-              <select
-                id="lang"
-                value={language}
-                onChange={(e) => setLanguage(e.target.value as any)}
-              >
-                <option value="fr">Français (France & International)</option>
-                <option value="fr">Créole haïtien (Kreyòl Ayisyen)</option>
-                <option value="en">Anglais (English - US/UK)</option>
-                <option value="es">Espagnol (Español)</option>
-                <option value="de">Allemand (Deutsch)</option>
-                <option value="it">Italien (Italiano)</option>
-              </select>
-            </div>
-
-            {/* Ton / Style Chips */}
-            <div className="field">
-              <div className="lab">Ton & Intention</div>
-              <div className="seg">
-                {VOCAL_STYLES.map((vStyle) => {
-                  const isSelected = style === vStyle.prompt;
-                  return (
-                    <button
-                      key={vStyle.id}
-                      type="button"
-                      className="chip"
-                      aria-pressed={isSelected}
-                      onClick={() => {
-                        setStyle(vStyle.prompt);
-                        setIsTextModifiedSinceGen(true);
-                      }}
-                    >
-                      {vStyle.label}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Débit (Playback Rate) Slider */}
-            <div className="field">
-              <label htmlFor="rate">
-                <span>Débit (vitesse)</span>
-                <output id="o-rate">{rate.toFixed(2)}x</output>
-              </label>
-              <input
-                type="range"
-                id="rate"
-                min="0.6"
-                max="1.8"
-                step="0.05"
-                value={rate}
-                onChange={(e) => setRate(parseFloat(e.target.value))}
-                style={{
-                  '--p': `${((rate - 0.6) / 1.2) * 100}%`,
-                } as any}
-              />
-              <div className="scale">
-                <span>Lent</span>
-                <span>Naturel (1.0x)</span>
-                <span>Rapide</span>
-              </div>
-            </div>
-
-            {/* Tonalité (Pitch) Slider */}
-            <div className="field">
-              <label htmlFor="pitch">
-                <span>Tonalité</span>
-                <output id="o-pitch">{pitch > 0 ? `+${pitch}` : pitch} st</output>
-              </label>
-              <input
-                type="range"
-                id="pitch"
-                min="-6"
-                max="6"
-                step="0.5"
-                value={pitch}
-                onChange={(e) => setPitch(parseFloat(e.target.value))}
-                style={{
-                  '--p': `${((pitch + 6) / 12) * 100}%`,
-                } as any}
-              />
-              <div className="scale">
-                <span>Grave</span>
-                <span>0</span>
-                <span>Aigu</span>
-              </div>
-            </div>
-
-            {/* Studio Warmth & Auto-Mix Banner */}
-            <div className="p-3.5 bg-raised rounded-2xl border border-line space-y-2.5">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-text">Chaleur Lampe Studio</span>
-                <input
-                  type="checkbox"
-                  checked={studioWarmth}
-                  onChange={(e) => setStudioWarmth(e.target.checked)}
-                  className="w-4 h-4 accent-amber-500 cursor-pointer"
-                />
-              </div>
-              <p className="text-[12px] text-muted">
-                Compression broadcast et saturation harmonique pour un timbre chaud et présent.
-              </p>
-              <button
-                type="button"
-                onClick={() => setIsAutoMixModalOpen(true)}
-                className="w-full py-2 bg-surface hover:bg-raised text-accent-text border border-line rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition"
-              >
-                <Wand2 className="w-3.5 h-3.5 text-amber-500" />
-                <span>Nettoyer & Mixer un enregistrement</span>
-              </button>
-            </div>
-          </aside>
-
-          {/* Master Dock: Interactive Waveform Player & Primary Generate Action */}
-          <footer className="dock" role="region" aria-label="Lecteur audio et génération">
+          <div className="dock-actions">
+            {/* Primary Generate Action */}
             <button
-              className="play"
-              onClick={togglePlayPause}
-              disabled={!currentAudioUrl || isGenerating}
-              aria-label={isPlaying ? 'Mettre en pause' : 'Lire la voix off'}
-              title={isPlaying ? 'Pause' : 'Lecture'}
+              className="btn btn-primary"
+              onClick={() => {
+                if (activeView !== 'studio') {
+                  setActiveView('studio');
+                }
+                handleGenerateVoiceover();
+              }}
+              disabled={isGenerating || !text.trim()}
             >
-              {isPlaying ? <Pause className="ic" /> : <Play className="ic" />}
+              {isGenerating ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  <span>Génération en cours...</span>
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-4 h-4" />
+                  <span>{isTextModifiedSinceGen && currentAudioUrl ? 'Régénérer' : 'Générer la voix off'}</span>
+                </>
+              )}
             </button>
 
-            <div className="wave-wrap">
-              {/* Waveform Bars */}
-              <div
-                className={`wave ${isGenerating ? 'loading' : ''}`}
-                onClick={(e) => {
-                  if (!audioElRef.current || audioDuration <= 0) return;
-                  const rect = e.currentTarget.getBoundingClientRect();
-                  const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-                  audioElRef.current.currentTime = ratio * audioDuration;
-                }}
-              >
-                {waveBarHeights.map((h, idx) => {
-                  const progressRatio = audioDuration > 0 ? currentTime / audioDuration : 0;
-                  const isPassed = (idx / totalWaveBars) <= progressRatio;
-                  return (
-                    <i
-                      key={idx}
-                      className={isPassed && isPlaying ? 'on' : ''}
-                      style={{
-                        '--h': `${h}px`,
-                        '--i': idx,
-                      } as any}
-                    />
-                  );
-                })}
-              </div>
-
-              <div className="dock-info num">
-                <span className="state">
-                  {isGenerating
-                    ? 'Génération haute fidélité en cours...'
-                    : currentAudioUrl
-                    ? `${activeVoiceName} • Prise prête`
-                    : 'Prêt à générer'}
-                </span>
-                <span>
-                  <b>{formatTime(currentTime)}</b> / {formatTime(audioDuration || estimatedSeconds)}
-                </span>
-              </div>
-            </div>
-
-            <div className="dock-actions">
-              {/* Primary Generate Button */}
-              <button
-                className="btn btn-primary"
-                onClick={handleGenerateVoiceover}
-                disabled={isGenerating || !text.trim()}
-              >
-                {isGenerating ? (
-                  <>
-                    <RefreshCw className="w-4 h-4 animate-spin" />
-                    <span>Génération en cours...</span>
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="w-4 h-4" />
-                    <span>{isTextModifiedSinceGen && currentAudioUrl ? 'Régénérer' : 'Générer la voix off'}</span>
-                  </>
-                )}
-              </button>
-
-              {/* Direct MP3 Download Button */}
-              <button
-                className="btn btn-ghost"
-                onClick={() => {
-                  if (currentMp3Blob) {
-                    downloadAudioFile(currentMp3Blob, `voxflow_${activeVoiceName.toLowerCase()}.mp3`);
-                    showToast('Téléchargement du fichier MP3 HD (320k)');
-                  } else {
-                    handleGenerateVoiceover();
-                  }
-                }}
-                disabled={!currentMp3Blob && isGenerating}
-                title="Exporter en MP3 HD 320 kbps"
-              >
-                <Download className="ic" />
-                <span className="hidden sm:inline">MP3 HD</span>
-              </button>
-            </div>
-          </footer>
-        </section>
-
-        {/* ================= VIEW 2: VOIX (CATALOGUE) ================= */}
-        <section className={`view ${activeView === 'voix' ? 'on' : ''}`} data-view="voix">
-          <p className="lead">
-            Explorez 20 comédiens voix off francophones et créoles haïtiens calibrés pour la publicité, le journalisme, les récits et les livres audio.
-          </p>
-
-          {/* Filter Chips */}
-          <div className="filters">
-            {[
-              'Tous',
-              'Créole & Caraïbes',
-              'Français Métropolitain',
-              'Publicité',
-              'Journalisme & Reportage',
-              'Documentaire',
-              'Livre audio & Romance',
-              'Cinéma & Gaming',
-            ].map((cat) => (
-              <button
-                key={cat}
-                type="button"
-                className="chip"
-                aria-pressed={voiceCategoryFilter === cat}
-                onClick={() => setVoiceCategoryFilter(cat)}
-              >
-                {cat}
-              </button>
-            ))}
+            {/* Direct MP3 Download Button */}
+            <button
+              className="btn btn-ghost"
+              onClick={() => {
+                if (currentMp3Blob) {
+                  downloadAudioFile(currentMp3Blob, `voxflow_${activeVoiceName.toLowerCase()}.mp3`);
+                  showToast('Téléchargement du fichier MP3 HD (320k)');
+                } else {
+                  handleGenerateVoiceover();
+                }
+              }}
+              disabled={!currentMp3Blob && isGenerating}
+              title="Exporter en MP3 HD 320 kbps"
+            >
+              <Download className="ic" />
+              <span className="hidden sm:inline">MP3 HD</span>
+            </button>
           </div>
-
-          {/* Voices Grid */}
-          <div className="voices">
-            {filteredVoices.map((voice) => {
-              const isSelected = selectedVoiceId === voice.id;
-              const isPreviewing = playingPreviewVoiceId === voice.id;
-
-              return (
-                <div
-                  key={voice.id}
-                  className={`voice ${isSelected ? 'sel' : ''}`}
-                >
-                  <div
-                    className="avatar"
-                    style={{
-                      backgroundColor: voice.gender === 'Féminin' ? '#7C3AED' : '#0284C7',
-                    }}
-                  >
-                    {voice.name.slice(0, 2).toUpperCase()}
-                  </div>
-
-                  <div className="meta">
-                    <b>{voice.name}</b>
-                    <span>{voice.gender} • {voice.category}</span>
-                    <p className="text-[12px] text-muted line-clamp-1 mt-0.5">{voice.description}</p>
-                  </div>
-
-                  {/* Audio Preview button */}
-                  <button
-                    type="button"
-                    className="icon-btn"
-                    onClick={(e) => handlePlayVoicePreview(e, voice)}
-                    title="Écouter un extrait vocal"
-                  >
-                    {isPreviewing ? <Pause className="w-4 h-4 text-amber-500" /> : <Play className="w-4 h-4" />}
-                  </button>
-
-                  {/* Use / Select button */}
-                  <button
-                    type="button"
-                    className={`btn use ${isSelected ? 'btn-primary' : 'btn-ghost'}`}
-                    onClick={() => {
-                      handleSelectVoice(voice.id, false);
-                      setActiveView('studio');
-                    }}
-                  >
-                    {isSelected ? 'Active' : 'Choisir'}
-                  </button>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-
-        {/* ================= VIEW 3: CLONAGE ================= */}
-        <section className={`view ${activeView === 'clonage' ? 'on' : ''}`} data-view="clonage">
-          <p className="lead">
-            Créez une réplique vocale fidèle à partir d'un échantillon audio enregistré au microphone ou importé depuis vos fichiers.
-          </p>
-
-          <div className="clone">
-            {/* Step 1: Audio Sample */}
-            <div className="step">
-              <div className="n">1</div>
-              <h3>Échantillon vocal</h3>
-              <div className="body">
-                <p>Enregistrez votre voix pendant 15 à 30 secondes en lisant un texte naturel, ou importez un fichier audio propre.</p>
-                <div className="drop">
-                  <div className="row">
-                    <button
-                      type="button"
-                      className="btn btn-rec"
-                      onClick={() => setIsCloneModalOpen(true)}
-                    >
-                      <Mic className="w-4 h-4" />
-                      <span>Enregistrer un échantillon</span>
-                    </button>
-                    <button
-                      type="button"
-                      className="btn btn-ghost"
-                      onClick={() => setIsCloneModalOpen(true)}
-                    >
-                      <Upload className="w-4 h-4" />
-                      <span>Importer un fichier (WAV, MP3)</span>
-                    </button>
-                  </div>
-                  <span className="text-xs text-muted">Durée conseillée : 15 à 60 secondes sans musique de fond</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Step 2: Cloned voices list */}
-            <div className="step">
-              <div className="n">2</div>
-              <h3>Mes voix clonées ({clonedVoices.length})</h3>
-              <div className="body">
-                {clonedVoices.length === 0 ? (
-                  <p className="text-sm text-muted">Aucune voix clonée pour le moment. Cliquez sur le bouton ci-dessus pour enregistrer votre voix.</p>
-                ) : (
-                  <div className="grid gap-2">
-                    {clonedVoices.map((clone) => (
-                      <div key={clone.id} className="sample on">
-                        <Radio className="w-4 h-4 text-emerald-400" />
-                        <b>{clone.name}</b>
-                        <span className="text-xs text-muted">{clone.vocalRange} • {clone.timbre}</span>
-                        <button
-                          type="button"
-                          className="btn btn-primary h-8 px-3 text-xs"
-                          onClick={() => {
-                            handleSelectVoice(clone.id, true, clone);
-                            setActiveView('studio');
-                          }}
-                        >
-                          Utiliser dans le Studio
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteClone(clone.id)}
-                          className="text-muted hover:text-rose-400 p-1"
-                          title="Supprimer cette voix clonée"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* ================= VIEW 4: BIBLIOTHÈQUE ================= */}
-        <section className={`view ${activeView === 'biblio' ? 'on' : ''}`} data-view="biblio">
-          <div className="flex items-center justify-between mb-4">
-            <p className="lead mb-0">
-              Retrouvez l'historique complet de vos générations de voix off. Réécoutez, téléchargez en MP3 ou rechargez les paramètres dans le Studio.
-            </p>
-            {savedRecords.length > 0 && (
-              <button
-                type="button"
-                onClick={async () => {
-                  if (window.confirm('Voulez-vous vider tout votre historique ?')) {
-                    await clearAllAudioRecordsFromDB();
-                    setSavedRecords([]);
-                    showToast('Historique vidé.');
-                  }
-                }}
-                className="text-xs text-muted hover:text-rose-400 underline"
-              >
-                Vider l'historique
-              </button>
-            )}
-          </div>
-
-          <div className="lib">
-            {savedRecords.length === 0 ? (
-              <div className="p-8 text-center text-muted">
-                <FileText className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                <p>Aucun enregistrement dans votre bibliothèque pour l'instant.</p>
-                <button
-                  type="button"
-                  className="btn btn-primary mt-3 text-xs"
-                  onClick={() => setActiveView('studio')}
-                >
-                  Générer une première voix off
-                </button>
-              </div>
-            ) : (
-              savedRecords.map((record) => (
-                <div key={record.id} className="lib-row">
-                  <button
-                    type="button"
-                    className="icon-btn"
-                    onClick={() => handlePlaySavedRecord(record)}
-                    title="Écouter dans le dock"
-                  >
-                    <Play className="w-4 h-4" />
-                  </button>
-
-                  <div className="meta">
-                    <b>{record.title}</b>
-                    <span>
-                      {record.voiceName} • {new Date(record.createdAt).toLocaleDateString('fr-FR', {
-                        day: 'numeric',
-                        month: 'short',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
-                    </span>
-                    <p className="text-xs text-muted line-clamp-1">{record.originalText}</p>
-                  </div>
-
-                  <span className="dur num">{formatTime(record.duration)}</span>
-
-                  <button
-                    type="button"
-                    className="btn btn-ghost h-8 px-3 text-xs"
-                    onClick={() => handleModifySavedRecord(record)}
-                    title="Recharger le texte et les réglages dans le Studio"
-                  >
-                    Modifier
-                  </button>
-
-                  <button
-                    type="button"
-                    className="icon-btn"
-                    onClick={() => downloadAudioFile(record.mp3Blob, `${record.title}.mp3`)}
-                    title="Télécharger MP3 HD"
-                  >
-                    <Download className="w-4 h-4 text-emerald-500" />
-                  </button>
-
-                  <button
-                    type="button"
-                    className="icon-btn text-muted hover:text-rose-400"
-                    onClick={() => handleDeleteSavedRecord(record.id)}
-                    title="Supprimer"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              ))
-            )}
-          </div>
-        </section>
+        </footer>
       </main>
 
       {/* MOBILE BOTTOM NAVIGATION TABS (< 900px) */}

@@ -71,7 +71,7 @@ function generateAcousticSpeechWav(
   const baseF0 = (isFemale ? 215 : 122) * Math.pow(2, pitchShift / 12);
 
   const wordsPerSec = Math.max(1.6, Math.min(3.8, 2.5 * rate));
-  const rawDuration = Math.max(1.8, Math.min(130, words.length / wordsPerSec));
+  const rawDuration = Math.max(1.8, Math.min(320, words.length / wordsPerSec));
   const totalSamples = Math.floor(rawDuration * sampleRate);
 
   const buffer = Buffer.alloc(44 + totalSamples * 2);

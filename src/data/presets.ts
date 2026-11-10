@@ -279,11 +279,28 @@ export const PRESET_VOICES: VoicePreset[] = [
 
 export const SAMPLE_SCRIPTS = [
   {
-    id: 'long-narration-2min',
-    title: 'Chronique Longue (2 Minutes)',
+    id: 'long-narration-5min',
+    title: 'Grand Format Documentaire (4-5 Minutes)',
     icon: 'Clock',
-    genre: 'Chronique & Narration Longue',
-    text: "Bienvenue dans cette grande édition spéciale de Voxflow. Aujourd'hui, nous prenons le temps d'explorer l'impact grandissant de la voix dans nos vies quotidiennes et professionnelles. De la narration de documentaires captivants aux annonces publicitaires qui marquent les esprits, le timbre vocal est bien plus qu'un simple son : il transporte une émotion, forge une confiance immédiate et crée une passerelle intime entre le conteur et son auditoire.\n\nDans les Caraïbes comme à travers toute la francophonie, nos voix reflètent la richesse de nos racines et la vivacité de nos accents. Qu'il s'agisse de la mélodie chantante d'un récit créole sous le soleil de Port-au-Prince ou de la précision posée d'un bulletin d'information, chaque nuance compte. Avec notre studio de voix off intelligent, vous bénéficiez désormais d'une prise audio continue jusqu'à deux minutes complètes, calibrée avec une haute fidélité acoustique.\n\nPrenez le temps d'ajuster le débit, d'équilibrer la chaleur studio ou d'explorer nos comédiens virtuels. Que votre projet s'adresse à des millions d'auditeurs ou à un cercle d'initiés, Voxflow vous accompagne pas à pas pour faire résonner vos plus belles histoires.",
+    genre: 'Récit & Narration Longue',
+    text: `Bienvenue dans cette grande édition spéciale de Voxflow. Aujourd'hui, nous prenons le temps d'explorer l'art de la voix humaine et la puissance du son dans nos vies contemporaines. De la narration de grands documentaires aux annonces publicitaires percutantes, le timbre vocal est bien plus qu'une onde acoustique : il transporte une intention, forge une confiance immédiate et crée une passerelle intime entre le conteur et son auditoire.
+
+Dans les Caraïbes comme à travers toute la francophonie, nos voix reflètent la richesse inestimable de nos racines, la vivacité de nos accents et la chaleur de nos terroirs. Qu'il s'agisse de la mélodie chantante d'un récit créole sous le ciel étoilé de Port-au-Prince, de la force persuasive d'une campagne commerciale ou de la précision posée d'un grand bulletin d'information, chaque nuance compte. Avec notre studio de voix off intelligent, vous bénéficiez désormais d'une prise audio continue jusqu'à cinq minutes complètes, calibrée avec une haute fidélité acoustique professionnelle.
+
+Imaginez un instant le silence qui précède l'annonce d'une découverte majeure. Les mots s'élèvent avec calme, puis prennent de l'ampleur. La respiration devient le premier instrument de la dramaturgie. Dans le studio Voxflow, vous pouvez insérer des silences expressifs, moduler la vitesse de diction, affiner la hauteur tonale et insuffler une chaleur lampe digne des plus grands microphones à ruban vintage. Chaque phrase s'articule avec fluidité, respectant la ponctuation naturelle et l'équilibre spectral de l'oreille humaine.
+
+Poursuivons notre voyage sonore. Lorsqu'un reportage nous transporte sur le terrain, au cœur des marchés animés de Port-au-Prince ou le long des côtes caribéennes, la voix doit porter l'authenticité de l'instant. Elle doit être à la fois proche et universelle, attentive aux détails et capable d'émouvoir. C'est précisément cette alchimie que nous avons perfectionnée : une synthèse acoustique capable de préserver le caractère organique de la parole vivante, sans les imperfections des bruits parasites ni la froideur des machines d'autrefois.
+
+En explorant notre bibliothèque de comédiens, vous découvrirez des personnalités vocales uniques : des timbres graves et solennels pour les récits historiques, des voix féminines limpides et captivantes pour le journalisme d'investigation, et des accents créoles pétillants d'énergie pour électriser vos messages promotionnels. Et si vous souhaitez perpétuer votre propre signature sonore, notre laboratoire de clonage et notre suite de mixage automatique restaurent vos enregistrements avec la clarté d'un mastering broadcast.
+
+Que votre création s'adresse à des millions d'auditeurs à la radio, sur YouTube, en podcast ou au cinéma, Voxflow vous donne le pouvoir de captiver du premier au dernier mot. Prenez place dans le studio, libérez votre inspiration et donnez à vos textes la voix qu'ils méritent véritablement.`,
+  },
+  {
+    id: 'long-narration-2min',
+    title: 'Chronique Courte (1-2 Minutes)',
+    icon: 'Clock',
+    genre: 'Chronique & Narration',
+    text: "Bienvenue dans cette édition de Voxflow. Aujourd'hui, nous prenons le temps d'explorer l'impact grandissant de la voix dans nos vies quotidiennes et professionnelles. De la narration de documentaires captivants aux annonces publicitaires qui marquent les esprits, le timbre vocal est bien plus qu'un simple son : il transporte une émotion, forge une confiance immédiate et crée une passerelle intime entre le conteur et son auditoire.\n\nDans les Caraïbes comme à travers toute la francophonie, nos voix reflètent la richesse de nos racines et la vivacité de nos accents. Qu'il s'agisse de la mélodie chantante d'un récit créole sous le soleil de Port-au-Prince ou de la précision posée d'un bulletin d'information, chaque nuance compte. Avec notre studio de voix off intelligent, vous bénéficiez désormais d'une prise audio continue calibrée avec une haute fidélité acoustique.",
   },
   {
     id: 'creole-pub',
