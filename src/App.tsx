@@ -40,6 +40,7 @@ import {
   audioBufferToWavBlob,
   audioBufferToMp3Blob,
   downloadAudioFile,
+  generateUniqueAudioFilename,
 } from './utils/audioProcessor';
 import {
   getAllAudioRecordsFromDB,
@@ -62,8 +63,8 @@ export default function App() {
   const [activeView, setActiveView] = useState<ViewMode>('studio');
   const [theme, setTheme] = useState<'light' | 'dark'>('dark');
 
-  // Script State
-  const [text, setText] = useState<string>(SAMPLE_SCRIPTS[0].text);
+  // Script State (always starts empty as requested by user)
+  const [text, setText] = useState<string>('');
   const [language, setLanguage] = useState<'fr' | 'en' | 'es' | 'de' | 'it'>('fr');
   const [isTextModifiedSinceGen, setIsTextModifiedSinceGen] = useState<boolean>(false);
 
@@ -303,8 +304,9 @@ export default function App() {
       setCurrentTime(0);
       setIsTextModifiedSinceGen(false);
 
-      // Save to persistent database
-      const recordTitle = `Prise ${savedRecords.length + 1} - ${currentVoiceDisplayName}`;
+      // Save to persistent database with unique reference
+      const uniqueCode = Math.random().toString(36).substring(2, 6).toUpperCase();
+      const recordTitle = `Prise ${savedRecords.length + 1} (${uniqueCode}) - ${currentVoiceDisplayName}`;
       const newRecord: SavedAudioRecord = {
         id: `rec_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
         createdAt: new Date().toISOString(),
@@ -750,15 +752,35 @@ export default function App() {
                   >
                     {isOptimizingScript ? 'Optimisation...' : 'Polir le texte (IA)'}
                   </button>
+
+                  <select
+                    value=""
+                    onChange={(e) => {
+                      const selected = SAMPLE_SCRIPTS.find((s) => s.id === e.target.value);
+                      if (selected) {
+                        setText(selected.text);
+                        setIsTextModifiedSinceGen(true);
+                      }
+                    }}
+                    className="chip ml-auto text-xs py-0 h-[34px] cursor-pointer"
+                    title="Insérer un modèle de texte sur demande"
+                  >
+                    <option value="" disabled>Insérer un exemple...</option>
+                    {SAMPLE_SCRIPTS.map((s) => (
+                      <option key={s.id} value={s.id}>{s.title}</option>
+                    ))}
+                  </select>
+
                   <button
                     type="button"
-                    className="chip ml-auto"
+                    className="chip text-muted hover:text-rose-400"
                     onClick={() => {
                       setText('');
                       setIsTextModifiedSinceGen(true);
                     }}
+                    title="Vider l'éditeur de texte"
                   >
-                    Effacer
+                    Effacer tout
                   </button>
                 </div>
 
@@ -1325,8 +1347,12 @@ export default function App() {
                           <button
                             type="button"
                             className="icon-btn"
-                            onClick={() => downloadAudioFile(record.mp3Blob, `${record.title}.mp3`)}
-                            title="Télécharger MP3 HD (320k)"
+                            onClick={() => {
+                              const filename = generateUniqueAudioFilename('voxflow', record.voiceName, 'mp3', record.title);
+                              downloadAudioFile(record.mp3Blob, filename);
+                              showToast(`Fichier téléchargé : ${filename}`);
+                            }}
+                            title="Télécharger MP3 HD (nom unique)"
                           >
                             <Download className="w-4 h-4 text-emerald-500" />
                           </button>
@@ -1468,14 +1494,15 @@ export default function App() {
               className="btn btn-ghost"
               onClick={() => {
                 if (currentMp3Blob) {
-                  downloadAudioFile(currentMp3Blob, `voxflow_${activeVoiceName.toLowerCase()}.mp3`);
-                  showToast('Téléchargement du fichier MP3 HD (320k)');
+                  const uniqueFilename = generateUniqueAudioFilename('voxflow', activeVoiceName, 'mp3');
+                  downloadAudioFile(currentMp3Blob, uniqueFilename);
+                  showToast(`Fichier exporté : ${uniqueFilename}`);
                 } else {
                   handleGenerateVoiceover();
                 }
               }}
               disabled={!currentMp3Blob && isGenerating}
-              title="Exporter en MP3 HD 320 kbps"
+              title="Exporter en MP3 HD 320 kbps (nom unique)"
             >
               <Download className="ic" />
               <span className="hidden sm:inline">MP3 HD</span>

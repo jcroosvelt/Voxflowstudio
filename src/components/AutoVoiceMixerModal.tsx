@@ -31,6 +31,7 @@ import {
   audioBufferToWavBlob,
   audioBufferToMp3Blob,
   downloadAudioFile,
+  generateUniqueAudioFilename,
 } from '../utils/audioProcessor';
 
 interface AutoVoiceMixerModalProps {
@@ -809,8 +810,12 @@ export const AutoVoiceMixerModal: React.FC<AutoVoiceMixerModalProps> = ({
                 {/* Download MP3 */}
                 <button
                   type="button"
-                  onClick={() => downloadAudioFile(mixResult.cleanedMp3Blob, `voxflow_mix_${mixResult.presetUsed}.mp3`)}
+                  onClick={() => {
+                    const uniqueFilename = generateUniqueAudioFilename('voxflow_mix', mixResult.presetUsed, 'mp3');
+                    downloadAudioFile(mixResult.cleanedMp3Blob, uniqueFilename);
+                  }}
                   className="px-3.5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl border border-slate-700 transition flex items-center gap-1.5 shadow-sm active:scale-95"
+                  title="Télécharger MP3 320 kbps avec nom unique"
                 >
                   <Download className="w-3.5 h-3.5 text-emerald-400" />
                   <span>MP3 HD 320k</span>
@@ -819,8 +824,12 @@ export const AutoVoiceMixerModal: React.FC<AutoVoiceMixerModalProps> = ({
                 {/* Download WAV */}
                 <button
                   type="button"
-                  onClick={() => downloadAudioFile(mixResult.cleanedWavBlob, `voxflow_mix_${mixResult.presetUsed}.wav`)}
+                  onClick={() => {
+                    const uniqueFilename = generateUniqueAudioFilename('voxflow_mix', mixResult.presetUsed, 'wav');
+                    downloadAudioFile(mixResult.cleanedWavBlob, uniqueFilename);
+                  }}
                   className="px-3.5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl border border-slate-700 transition flex items-center gap-1.5 shadow-sm active:scale-95"
+                  title="Télécharger WAV Studio sans perte avec nom unique"
                 >
                   <Download className="w-3.5 h-3.5 text-cyan-400" />
                   <span>WAV Studio</span>

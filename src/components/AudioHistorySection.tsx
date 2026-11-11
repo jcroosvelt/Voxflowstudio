@@ -21,7 +21,7 @@ import {
   RotateCcw,
 } from 'lucide-react';
 import { SavedAudioRecord } from '../types';
-import { downloadAudioFile } from '../utils/audioProcessor';
+import { downloadAudioFile, generateUniqueAudioFilename } from '../utils/audioProcessor';
 
 interface AudioHistorySectionProps {
   records: SavedAudioRecord[];
@@ -160,12 +160,12 @@ export const AudioHistorySection: React.FC<AudioHistorySectionProps> = ({
   };
 
   const handleDownloadMp3 = (record: SavedAudioRecord) => {
-    const filename = `voxflow_${record.voiceName.toLowerCase().replace(/\s+/g, '_')}_${record.id}.mp3`;
+    const filename = generateUniqueAudioFilename('voxflow', record.voiceName, 'mp3', record.title);
     downloadAudioFile(record.mp3Blob, filename);
   };
 
   const handleDownloadWav = (record: SavedAudioRecord) => {
-    const filename = `voxflow_${record.voiceName.toLowerCase().replace(/\s+/g, '_')}_${record.id}.wav`;
+    const filename = generateUniqueAudioFilename('voxflow', record.voiceName, 'wav', record.title);
     downloadAudioFile(record.wavBlob, filename);
   };
 

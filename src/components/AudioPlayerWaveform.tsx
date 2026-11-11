@@ -11,7 +11,7 @@ import {
   Repeat,
   Sliders,
 } from 'lucide-react';
-import { downloadAudioFile } from '../utils/audioProcessor';
+import { downloadAudioFile, generateUniqueAudioFilename } from '../utils/audioProcessor';
 
 interface AudioPlayerWaveformProps {
   audioBuffer: AudioBuffer | null;
@@ -283,14 +283,14 @@ export const AudioPlayerWaveform: React.FC<AudioPlayerWaveformProps> = ({
   const handleDownloadMp3 = () => {
     if (!mp3Blob) return;
     setExportingMp3(true);
-    const filename = `voxflow_${voiceName.toLowerCase().replace(/\s+/g, '_')}_${Date.now()}.mp3`;
+    const filename = generateUniqueAudioFilename('voxflow', voiceName, 'mp3');
     downloadAudioFile(mp3Blob, filename);
     setTimeout(() => setExportingMp3(false), 800);
   };
 
   const handleDownloadWav = () => {
     if (!wavBlob) return;
-    const filename = `voxflow_${voiceName.toLowerCase().replace(/\s+/g, '_')}_${Date.now()}.wav`;
+    const filename = generateUniqueAudioFilename('voxflow', voiceName, 'wav');
     downloadAudioFile(wavBlob, filename);
   };
 

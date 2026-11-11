@@ -57,61 +57,67 @@ function sanitizeBaseVoice(name: string | undefined): 'Puck' | 'Charon' | 'Kore'
   return 'Kore';
 }
 
-function generateAcousticSpeechWav(
-  text: string,
-  voiceName: string = 'Kore',
-  rate: number = 1.0,
-  pitchShift: number = 0
-): Buffer {
-  const sampleRate = 24000;
-  const cleanText = text.replace(/\[pause[^\]]*\]/gi, ' ... ').replace(/<[^>]+>/g, ' ');
-  const words = cleanText.trim().split(/\s+/).filter(Boolean);
+async function fetchGoogleTextToSpeechAudio(text: string, lang: string = 'fr'): Promise<Buffer> {
+  const clean = text
+    .replace(/\[pause[^\]]*\]/gi, ' , ')
+    .replace(/<[^>]+>/g, ' ')
+    .trim();
 
-  const isFemale = /léa|lea|sophie|camille|nadège|nadege|mireille|chloé|chloe|manon|fabienne|roseline/i.test(voiceName);
-  const baseF0 = (isFemale ? 215 : 122) * Math.pow(2, pitchShift / 12);
+  if (!clean) return Buffer.alloc(0);
 
-  const wordsPerSec = Math.max(1.6, Math.min(3.8, 2.5 * rate));
-  const rawDuration = Math.max(1.8, Math.min(320, words.length / wordsPerSec));
-  const totalSamples = Math.floor(rawDuration * sampleRate);
+  // Split text into natural spoken chunks under 140 chars around words and punctuation
+  const words = clean.split(/\s+/).filter(Boolean);
+  const chunks: string[] = [];
+  let currentChunk = '';
 
-  const buffer = Buffer.alloc(44 + totalSamples * 2);
-  buffer.write('RIFF', 0);
-  buffer.writeUInt32LE(36 + totalSamples * 2, 4);
-  buffer.write('WAVE', 8);
-  buffer.write('fmt ', 12);
-  buffer.writeUInt32LE(16, 16);
-  buffer.writeUInt16LE(1, 20); // PCM
-  buffer.writeUInt16LE(1, 22); // Mono
-  buffer.writeUInt32LE(sampleRate, 24);
-  buffer.writeUInt32LE(sampleRate * 2, 28);
-  buffer.writeUInt16LE(2, 32);
-  buffer.writeUInt16LE(16, 34);
-  buffer.write('data', 36);
-  buffer.writeUInt32LE(totalSamples * 2, 40);
+  for (const word of words) {
+    if ((currentChunk + ' ' + word).length > 130) {
+      if (currentChunk) chunks.push(currentChunk.trim());
+      currentChunk = word;
+    } else {
+      currentChunk = (currentChunk ? currentChunk + ' ' : '') + word;
+    }
+  }
+  if (currentChunk) chunks.push(currentChunk.trim());
 
-  let phase = 0;
-  const f1 = isFemale ? 650 : 500;
-  const f2 = isFemale ? 1800 : 1500;
+  if (chunks.length === 0) return Buffer.alloc(0);
 
-  for (let i = 0; i < totalSamples; i++) {
-    const t = i / sampleRate;
-    const sentencePos = (t % 4.0) / 4.0;
-    const pitchContour = 1.0 - sentencePos * 0.12 + Math.sin(t * 3.2) * 0.035;
-    const currentF0 = baseF0 * pitchContour;
-    phase += (2 * Math.PI * currentF0) / sampleRate;
+  // Map language codes to supported TTS language codes
+  const validLangs: Record<string, string> = {
+    fr: 'fr',
+    en: 'en',
+    es: 'es',
+    de: 'de',
+    it: 'it',
+    ht: 'fr', // French TTS pronounces Haitian Creole terms clearly and naturally
+  };
+  const targetLang = validLangs[lang.toLowerCase()] || 'fr';
 
-    const glottal = Math.sin(phase) + 0.45 * Math.sin(2 * phase) + 0.22 * Math.sin(3 * phase);
-    const formantResonance = 0.3 * Math.sin(t * 2 * Math.PI * f1) + 0.15 * Math.sin(t * 2 * Math.PI * f2);
+  // Fetch audio in parallel batches of 5 for ultra fast multi-minute rendering
+  const batchSize = 5;
+  const audioBuffers: Buffer[] = [];
 
-    const syllableWave = 0.5 + 0.5 * Math.sin(t * wordsPerSec * Math.PI * 2);
-    const pauseFactor = (Math.sin(t * 0.9) < -0.88) ? 0.08 : 1.0;
-
-    const sample = (glottal * 0.75 + formantResonance * 0.25) * syllableWave * pauseFactor * 0.55;
-    const int16Sample = Math.max(-32767, Math.min(32767, Math.floor(sample * 32767)));
-    buffer.writeInt16LE(int16Sample, 44 + i * 2);
+  for (let i = 0; i < chunks.length; i += batchSize) {
+    const batch = chunks.slice(i, i + batchSize);
+    const results = await Promise.all(
+      batch.map(async (chunk) => {
+        const url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(chunk)}&tl=${targetLang}&client=tw-ob`;
+        const res = await fetch(url, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          },
+        });
+        if (!res.ok) {
+          throw new Error(`Google TTS returned HTTP ${res.status}`);
+        }
+        const arrayBuf = await res.arrayBuffer();
+        return Buffer.from(arrayBuf);
+      })
+    );
+    audioBuffers.push(...results);
   }
 
-  return buffer;
+  return Buffer.concat(audioBuffers);
 }
 
 function combineWavBuffers(wavBuffers: Buffer[]): Buffer {
@@ -388,10 +394,22 @@ app.post('/api/tts/generate', async (req: Request, res: Response) => {
       }
     }
 
-    // High fidelity acoustic speech generator fallback (works in all preview and offline environments)
+    // Authentic Google Text-to-Speech audio generation (articulates real spoken words naturally)
     if (!base64Audio) {
-      const synthWavBuffer = generateAcousticSpeechWav(processedText, voiceName, rate, pitch);
-      base64Audio = synthWavBuffer.toString('base64');
+      try {
+        const speechAudioBuffer = await fetchGoogleTextToSpeechAudio(processedText, language);
+        if (speechAudioBuffer && speechAudioBuffer.length > 0) {
+          base64Audio = speechAudioBuffer.toString('base64');
+        }
+      } catch (ttsErr: any) {
+        console.error('Google Text-to-Speech synthesis error:', ttsErr);
+      }
+    }
+
+    if (!base64Audio) {
+      return res.status(500).json({
+        error: 'Impossible de générer la voix off. Veuillez vérifier votre texte et réessayer.',
+      });
     }
 
     return res.json({

@@ -159,37 +159,45 @@ export const VoiceCloneModal: React.FC<VoiceCloneModalProps> = ({
     }
   };
 
-  // Generate synthetic high quality demo vocal sample for instant testing
-  const handleLoadDemoSample = (type: 'male' | 'female' | 'radio') => {
+  // Generate authentic spoken demo vocal sample for instant testing
+  const handleLoadDemoSample = async (type: 'male' | 'female' | 'radio') => {
     setError(null);
-    const sampleRate = 24000;
-    const duration = 3.5;
-    const numSamples = Math.floor(sampleRate * duration);
-    const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate });
-    const buffer = audioCtx.createBuffer(1, numSamples, sampleRate);
-    const data = buffer.getChannelData(0);
+    try {
+      const demoPhrases = {
+        male: "Bonjour, ceci est un enregistrement de référence pour créer mon clone vocal masculin dans le studio.",
+        female: "Bonjour, j'enregistre cet extrait audio naturel pour calibrer ma voix féminine avec précision.",
+        radio: "Ici votre studio radio Voxflow, enregistrement de calibrage pour une voix chaleureuse et captivante.",
+      };
+      const textToSpeak = demoPhrases[type];
+      const res = await fetch('/api/tts/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text: textToSpeak,
+          voiceName: type === 'female' ? 'Léa' : type === 'radio' ? 'Patrick' : 'Garry',
+          language: 'fr',
+        }),
+      });
+      const data = await res.json();
+      if (data.success && data.audioBase64) {
+        const binaryString = atob(data.audioBase64);
+        const len = binaryString.length;
+        const bytes = new Uint8Array(len);
+        for (let i = 0; i < len; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+        const blob = new Blob([bytes], { type: 'audio/mp3' });
+        setAudioBlob(blob);
+        const url = URL.createObjectURL(blob);
+        setAudioUrl(url);
 
-    const baseFreq = type === 'male' ? 120 : type === 'female' ? 225 : 95;
-    for (let i = 0; i < numSamples; i++) {
-      const t = i / sampleRate;
-      const envelope = Math.sin((t / duration) * Math.PI) * (0.8 + 0.2 * Math.sin(t * 8));
-      const f1 = Math.sin(2 * Math.PI * baseFreq * t);
-      const f2 = 0.5 * Math.sin(2 * Math.PI * baseFreq * 2 * t);
-      const f3 = 0.25 * Math.sin(2 * Math.PI * baseFreq * 3 * t);
-      const formant = 0.2 * Math.sin(2 * Math.PI * (baseFreq * 4.5 + 50) * t);
-      data[i] = (f1 + f2 + f3 + formant) * 0.35 * envelope;
+        if (type === 'male') setVoiceName('Marc Studio (Voix Homme)');
+        else if (type === 'female') setVoiceName('Éléonore (Voix Femme)');
+        else setVoiceName('Victor Radio (Voix Profonde)');
+      }
+    } catch (e) {
+      console.warn('Failed to load spoken demo sample', e);
     }
-
-    const wav = audioBufferToWavBlob(buffer);
-    audioCtx.close().catch(() => {});
-
-    setAudioBlob(wav);
-    const url = URL.createObjectURL(wav);
-    setAudioUrl(url);
-
-    if (type === 'male') setVoiceName('Marc Studio (Voix Homme)');
-    else if (type === 'female') setVoiceName('Éléonore (Voix Femme)');
-    else setVoiceName('Victor Radio (Voix Profonde)');
   };
 
   const togglePreviewAudio = () => {

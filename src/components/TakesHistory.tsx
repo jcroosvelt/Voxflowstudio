@@ -9,7 +9,7 @@ import {
   Mic,
 } from 'lucide-react';
 import { AudioTake } from '../types';
-import { downloadAudioFile } from '../utils/audioProcessor';
+import { downloadAudioFile, generateUniqueAudioFilename } from '../utils/audioProcessor';
 
 interface TakesHistoryProps {
   takes: AudioTake[];
@@ -83,10 +83,10 @@ export const TakesHistory: React.FC<TakesHistoryProps> = ({
 
                 <button
                   onClick={() => {
-                    const filename = `voxflow_${take.voiceName.toLowerCase()}_${take.id}.mp3`;
+                    const filename = generateUniqueAudioFilename('voxflow', take.voiceName, 'mp3', take.title);
                     downloadAudioFile(take.mp3Blob, filename);
                   }}
-                  title="Télécharger en MP3"
+                  title="Télécharger en MP3 HD (nom unique)"
                   className="p-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 transition"
                 >
                   <Download className="w-3.5 h-3.5" />

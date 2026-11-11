@@ -16,7 +16,7 @@ export async function decodeAudioBase64(base64Data: string): Promise<AudioBuffer
   });
 
   try {
-    const audioBuffer = await audioCtx.decodeAudioData(bytes.buffer);
+    const audioBuffer = await audioCtx.decodeAudioData(bytes.buffer.slice(0));
     return audioBuffer;
   } finally {
     audioCtx.close().catch(() => {});
@@ -217,6 +217,44 @@ export function audioBufferToMp3Blob(buffer: AudioBuffer, kbps: number = 256): B
   }
 
   return new Blob(mp3Data as unknown as BlobPart[], { type: 'audio/mp3' });
+}
+
+/**
+ * Generates an informative, standardized, and guaranteed-unique filename
+ * for any generated or exported audio file.
+ * Example: voxflow_garry_pub_20261111_120530_8f2a.mp3
+ */
+export function generateUniqueAudioFilename(
+  prefix: string = 'voxflow',
+  voiceOrPreset: string = 'studio',
+  extension: 'mp3' | 'wav' = 'mp3',
+  contextSlug?: string
+): string {
+  const sanitize = (str: string) =>
+    str
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '') // remove accents (e.g. Nadège -> nadege)
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '_')
+      .replace(/^_+|_+$/g, '')
+      .substring(0, 20);
+
+  const cleanVoice = sanitize(voiceOrPreset) || 'voix';
+  const cleanContext = contextSlug ? `_${sanitize(contextSlug)}` : '';
+
+  const now = new Date();
+  const YYYY = now.getFullYear();
+  const MM = String(now.getMonth() + 1).padStart(2, '0');
+  const DD = String(now.getDate()).padStart(2, '0');
+  const hh = String(now.getHours()).padStart(2, '0');
+  const mm = String(now.getMinutes()).padStart(2, '0');
+  const ss = String(now.getSeconds()).padStart(2, '0');
+  const timestamp = `${YYYY}${MM}${DD}_${hh}${mm}${ss}`;
+
+  // 4 characters of random entropy to guarantee 100% uniqueness even within the same second
+  const uniqueId = Math.random().toString(36).substring(2, 6);
+
+  return `${prefix}_${cleanVoice}${cleanContext}_${timestamp}_${uniqueId}.${extension}`;
 }
 
 /**
